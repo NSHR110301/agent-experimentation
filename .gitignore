@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+/core/__pycache__
+/agent/__pycache__
+/__pycache__
+
+
+# Virtual env
+venv/
+
+# Secrets
+credentials.json
+token.json
+*.env
+
+# IDE
+.vscode/
+
+#txt
+clent_creds.txt
