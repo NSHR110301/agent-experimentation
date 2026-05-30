@@ -29,7 +29,8 @@ you will need to plug in your own Google API credentials.
 1. Clone the repository:
    ```bash
    git clone https://github.com
-   cd agentic-email-classifier
+   cd agent-experimentation
+   git checkout feature-email-seg-v2
    ```
 
 2. Install dependencies:
