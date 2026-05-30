@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>postit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0E0E0F;
+            --surface: #171718;
+            --surface2: #1E1E1F;
+            --border: #2A2A2D;
+            --text: #E8E6E1;
+            --muted: #6B6966;
+            --accent: #C8A97E;
+            --apply: #74C69D;
+            --apply-bg: #1B3D2F;
+            --review: #FFB347;
+            --review-bg: #3D2800;
+            --mono: 'DM Mono', monospace;
+            --serif: 'Fraunces', serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 0.5px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-family: var(--serif);
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .logo em {
+            font-style: italic;
+            font-weight: 300;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .live-label {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--muted);
+            display: inline-block;
+            transition: background 0.3s;
+        }
+
+        .live-dot.on {
+            background: var(--apply);
+        }
+
+        .run-btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 7px 14px;
+            background: var(--accent);
+            color: #0E0E0F;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            transition: opacity 0.15s;
+        }
+
+        .run-btn:hover {
+            opacity: 0.85;
+        }
+
+        .run-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            flex: 1;
+            overflow: hidden;
+            height: calc(100vh - 57px);
+        }
+
+        /* FEED */
+        .feed-pane {
+            border-right: 0.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            padding: 12px 20px;
+            border-bottom: 0.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .pane-title {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            padding: 12px 20px;
+            border-bottom: 0.5px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-val {
+            font-size: 18px;
+            font-family: var(--serif);
+            font-weight: 600;
+        }
+
+        .stat-val.g {
+            color: var(--apply);
+        }
+
+        .stat-val.a {
+            color: var(--review);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .feed-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .feed-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .feed-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: 4px;
+            padding: 9px 12px;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .feed-card.vis {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .feed-card.apply {
+            border-left: 2px solid var(--apply);
+        }
+
+        .feed-card.review {
+            border-left: 2px solid var(--review);
+        }
+
+        .feed-card.ignore {
+            border-left: 2px solid var(--border);
+        }
+
+        .feed-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .badge.apply {
+            background: var(--apply-bg);
+            color: var(--apply);
+        }
+
+        .badge.review {
+            background: var(--review-bg);
+            color: var(--review);
+        }
+
+        .badge.ignore {
+            background: var(--border);
+            color: var(--muted);
+        }
+
+        .badge.error {
+            background: #2D1B1B;
+            color: #E57373;
+        }
+
+        .feed-subj {
+            font-size: 12px;
+            color: var(--text);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .feed-lbl {
+            font-size: 10px;
+            color: var(--accent);
+            font-style: italic;
+            flex-shrink: 0;
+        }
+
+        .feed-conf {
+            font-size: 10px;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+
+        /* PANEL */
+        .panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .panel-head {
+            padding: 12px 14px;
+            border-bottom: 0.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .add-btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 5px 10px;
+            background: transparent;
+            color: var(--accent);
+            border: 0.5px solid var(--accent);
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.15s;
+        }
+
+        .add-btn:hover {
+            opacity: 1;
+        }
+
+        .chapters {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .chapter {
+            background: var(--bg);
+            border: 0.5px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .ch-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .ch-head:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .ch-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .ch-name {
+            font-size: 12px;
+            color: var(--text);
+            flex: 1;
+        }
+
+        .ch-count {
+            font-size: 10px;
+            color: var(--muted);
+            background: var(--surface);
+            padding: 1px 6px;
+            border-radius: 99px;
+        }
+
+        .ch-chev {
+            font-size: 11px;
+            color: var(--muted);
+            transition: transform 0.2s;
+        }
+
+        .chapter.open .ch-chev {
+            transform: rotate(180deg);
+        }
+
+        .ch-body {
+            display: none;
+            padding: 0 12px 10px;
+            border-top: 0.5px solid var(--border);
+        }
+
+        .chapter.open .ch-body {
+            display: block;
+        }
+
+        .rules-lbl {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 8px 0 5px;
+        }
+
+        .rules-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 7px;
+            min-height: 10px;
+        }
+
+        .rule-chip {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 99px;
+            border: 0.5px solid var(--border);
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--surface);
+        }
+
+        .rule-del {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 10px;
+            background: none;
+            border: none;
+            padding: 0;
+            font-family: var(--mono);
+            line-height: 1;
+        }
+
+        .rule-del:hover {
+            color: #E57373;
+        }
+
+        .rule-row {
+            display: flex;
+            gap: 5px;
+        }
+
+        .rule-input {
+            flex: 1;
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 7px;
+            background: var(--surface2);
+            border: 0.5px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            outline: none;
+        }
+
+        .rule-input:focus {
+            border-color: var(--accent);
+        }
+
+        .rule-input::placeholder {
+            color: var(--muted);
+        }
+
+        .rule-add {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 4px 8px;
+            background: var(--surface2);
+            border: 0.5px solid var(--border);
+            border-radius: 4px;
+            color: var(--accent);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .rule-add:hover {
+            border-color: var(--accent);
+        }
+
+        .ch-emails {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .ch-email {
+            font-size: 10px;
+            color: var(--muted);
+            padding: 3px 0;
+            border-bottom: 0.5px solid var(--border);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ch-email:last-child {
+            border-bottom: none;
+        }
+
+        .no-emails {
+            font-size: 10px;
+            color: var(--muted);
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        /* NEW LABEL FORM */
+        .new-form {
+            margin: 0 8px 5px;
+            padding: 10px;
+            background: var(--bg);
+            border: 0.5px solid var(--accent);
+            border-radius: 4px;
+            display: none;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .new-form.vis {
+            display: flex;
+        }
+
+        .new-input {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 5px 8px;
+            background: var(--surface2);
+            border: 0.5px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            outline: none;
+            width: 100%;
+        }
+
+        .new-input:focus {
+            border-color: var(--accent);
+        }
+
+        .new-input::placeholder {
+            color: var(--muted);
+        }
+
+        .form-btns {
+            display: flex;
+            gap: 5px;
+        }
+
+        .form-btn {
+            flex: 1;
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 5px;
+            border-radius: 4px;
+            border: 0.5px solid var(--border);
+            background: var(--surface2);
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .form-btn.p {
+            background: var(--accent);
+            color: #0E0E0F;
+            border-color: var(--accent);
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">post<em>it</em></div>
+        <div class="header-right">
+            <div class="live-label">
+                <span class="live-dot" id="dot"></span>
+                <span id="lbl">idle</span>
+            </div>
+            <button class="run-btn" id="runBtn" onclick="run()">▶ Run labeler</button>
+        </div>
+    </header>
+
+    <div class="main">
+        <div class="feed-pane">
+            <div class="pane-header">
+                <span class="pane-title">Live feed</span>
+                <span class="pane-title" id="feedCount"></span>
+            </div>
+            <div class="stats-row">
+                <div class="stat"><span class="stat-val g" id="sA">0</span><span class="stat-label">Labeled</span></div>
+                <div class="stat"><span class="stat-val a" id="sR">0</span><span class="stat-label">Review</span></div>
+                <div class="stat"><span class="stat-val" id="sI">0</span><span class="stat-label">Ignored</span></div>
+                <div class="stat"><span class="stat-val" id="sC">—</span><span class="stat-label">Avg conf</span></div>
+            </div>
+            <div class="feed-list" id="feedList">
+                <div class="feed-empty" id="feedEmpty">
+                    <span>No emails processed yet</span>
+                    <span style="font-size:10px;margin-top:4px">Hit ▶ Run labeler to start</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <span class="pane-title">Chapters</span>
+                <button class="add-btn" onclick="showNew()">+ New</button>
+            </div>
+            <div class="new-form" id="newForm">
+                <input class="new-input" id="newName" placeholder="Chapter name e.g. Scholarships" />
+                <input class="new-input" id="newRules" placeholder="Seed rules, comma separated" />
+                <div class="form-btns">
+                    <button class="form-btn" onclick="cancelNew()">Cancel</button>
+                    <button class="form-btn p" onclick="saveNew()">Create</button>
+                </div>
+            </div>
+            <div class="chapters" id="chapters"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:5000';
+        const COLORS = ['#534AB7', '#1D9E75', '#BA7517', '#A32D2D', '#185FA5', '#639922', '#993556'];
+        let rules = {}, emailsByLabel = {}, colorMap = {}, ci = 0;
+
+        function color(label) {
+            if (!colorMap[label]) colorMap[label] = COLORS[ci++ % COLORS.length];
+            return colorMap[label];
+        }
+
+        function safe(s) { return (s || '').replace(/[^a-zA-Z0-9]/g, '_'); }
+        function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+        function load() {
+            const s = localStorage.getItem('postit_rules');
+            rules = s ? JSON.parse(s) : {
+                "adobe interview": ["thank you for applying to adobe", "for position: member of technical staff", "congratulations"],
+                "house stuff": ["rent", "pay by", "rental agreement"]
+            };
+            if (!s) save();
+            render();
+        }
+
+        function save() {
+            localStorage.setItem('postit_rules', JSON.stringify(rules));
+            fetch(`${API}/rules`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rules) }).catch(() => { });
+        }
+
+        function render() {
+            const c = document.getElementById('chapters');
+            const openSet = new Set([...c.querySelectorAll('.chapter.open')].map(el => el.dataset.label));
+            c.innerHTML = '';
+            Object.entries(rules).forEach(([label, phrases]) => {
+                const emails = emailsByLabel[label] || [];
+                const col = color(label);
+                const id = safe(label);
+                const div = document.createElement('div');
+                div.className = 'chapter' + (openSet.has(label) ? ' open' : '');
+                div.dataset.label = label;
+                div.innerHTML = `
+      <div class="ch-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="ch-dot" style="background:${col}"></div>
+        <span class="ch-name">${esc(label)}</span>
+        <span class="ch-count">${emails.length}</span>
+        <span class="ch-chev">▾</span>
+      </div>
+      <div class="ch-body">
+        <div class="rules-lbl">Rules</div>
+        <div class="rules-list" id="rl-${id}">
+          ${phrases.map(p => `<div class="rule-chip">${esc(p)}<button class="rule-del" onclick="delRule(${JSON.stringify(label)},${JSON.stringify(p)})">×</button></div>`).join('')}
+        </div>
+        <div class="rule-row">
+          <input class="rule-input" id="ri-${id}" placeholder="add phrase…" onkeydown="if(event.key==='Enter')addRule(${JSON.stringify(label)},'ri-${id}')"/>
+          <button class="rule-add" onclick="addRule(${JSON.stringify(label)},'ri-${id}')">+ add</button>
+        </div>
+        <div class="ch-emails">
+          ${emails.length ? emails.map(e => `<div class="ch-email">· ${esc(e.subject)}</div>`).join('') : '<div class="no-emails">No emails filed yet</div>'}
+        </div>
+      </div>`;
+                c.appendChild(div);
+            });
+        }
+
+        function addRule(label, inputId) {
+            const inp = document.getElementById(inputId);
+            const val = inp.value.trim();
+            if (!val || !rules[label]) return;
+            if (!rules[label].includes(val)) { rules[label].push(val); save(); render(); }
+            inp.value = '';
+            document.querySelector(`[data-label="${CSS.escape(label)}"]`).classList.add('open');
+        }
+
+        function delRule(label, phrase) {
+            if (!rules[label]) return;
+            rules[label] = rules[label].filter(p => p !== phrase);
+            save(); render();
+            document.querySelector(`[data-label="${CSS.escape(label)}"]`).classList.add('open');
+        }
+
+        function showNew() { document.getElementById('newForm').classList.add('vis'); document.getElementById('newName').focus(); }
+        function cancelNew() { document.getElementById('newForm').classList.remove('vis'); document.getElementById('newName').value = ''; document.getElementById('newRules').value = ''; }
+        function saveNew() {
+            const name = document.getElementById('newName').value.trim();
+            const raw = document.getElementById('newRules').value.trim();
+            if (!name) return;
+            rules[name] = raw ? raw.split(',').map(r => r.trim()).filter(Boolean) : [];
+            save(); cancelNew(); render();
+            document.querySelector(`[data-label="${CSS.escape(name)}"]`).classList.add('open');
+        }
+
+        async function run() {
+            const btn = document.getElementById('runBtn');
+            const dot = document.getElementById('dot');
+            const lbl = document.getElementById('lbl');
+            btn.disabled = true; dot.classList.add('on'); lbl.textContent = 'processing…';
+            document.getElementById('feedEmpty').style.display = 'none';
+            try {
+                const res = await fetch(`${API}/emails`);
+                if (!res.ok) throw new Error(res.status);
+                const data = await res.json();
+                const emails = data.emails || [];
+                updateStats(emails);
+                renderFeed(emails);
+                emailsByLabel = {};
+                emails.forEach(e => { if (e.action === 'apply' && e.label) { emailsByLabel[e.label] = emailsByLabel[e.label] || []; emailsByLabel[e.label].push(e); } });
+                render();
+                lbl.textContent = `done · ${emails.length} processed`;
+                btn.textContent = '↺ Run again';
+            } catch (e) { lbl.textContent = `error: ${e.message}`; }
+            finally {
+                dot.classList.remove('on');
+                btn.disabled = false;
+            }
+        }
+
+        function updateStats(emails) {
+            document.getElementById('sA').textContent = emails.filter(e => e.action === 'apply').length;
+            document.getElementById('sR').textContent = emails.filter(e => e.action === 'review').length;
+            document.getElementById('sI').textContent = emails.filter(e => e.action === 'ignore').length;
+            const avg = emails.length ? Math.round(emails.reduce((s, e) => s + e.confidence, 0) / emails.length) : 0;
+            document.getElementById('sC').textContent = emails.length ? avg + '%' : '—';
+            document.getElementById('feedCount').textContent = emails.length + ' emails';
+        }
+
+        function renderFeed(emails) {
+            const list = document.getElementById('feedList');
+            list.innerHTML = '';
+            emails.forEach((e, i) => {
+                const card = document.createElement('div');
+                card.className = `feed-card ${e.action}`;
+                card.innerHTML = `<div class="feed-top">
+      <span class="badge ${e.action}">${e.action}</span>
+      <span class="feed-subj">${esc(e.subject || '(no subject)')}</span>
+      ${e.label && e.action === 'apply' ? `<span class="feed-lbl">${esc(e.label)}</span>` : ''}
+      ${e.action !== 'ignore' ? `<span class="feed-conf">${e.confidence}%</span>` : ''}
+    </div>`;
+                list.appendChild(card);
+                setTimeout(() => card.classList.add('vis'), i * 70);
+            });
+        }
+
+        load();
+    </script>
+</body>
+
+</html>
